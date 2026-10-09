@@ -1,0 +1,28 @@
+# Local environments and secrets
+.venv*/
+.env
+.env.*
+!.env.example
+config/secret_key
+config/field_encryption_key
+config/codex.toml
+
+# Python, build and notebook artifacts
+__pycache__/
+*.py[cod]
+*.egg-info/
+dist/
+build/
+.pytest_cache/
+.ipynb_checkpoints/
+artifacts/
+
+# Local working documents
+AGENTS.md
+PROJECT_PLAN.md
+
+# Personal editor and operating system files
+.vscode/
+.idea/
+.DS_Store
+Thumbs.db

@@ -1,0 +1,16 @@
+[llm]
+model = "openai/gpt-oss-120b"
+temperature = 0.0
+reasoning_effort = "low"
+max_tokens = 2048
+timeout_seconds = 60.0
+max_retries = 0
+
+[files]
+prompt = "prompts/support.txt"
+orders = "data/orders.json"
+
+[demo]
+customer_id = "CUST-001"
+order_id = "ORD-1042"
+question = "Quel est le statut de ma commande ORD-1042 ? Réponds en français, brièvement, sans inventer de date de livraison."
