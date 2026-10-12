@@ -8,7 +8,7 @@ The project demonstrates two paths over fictional order data:
 
 ```text
 Groq probe:  question -> model selects get_order -> validated lookup -> model answer
-Local graph: order ID -> lookup_order -> answer or unavailable
+Local graph: question -> classify_request -> lookup or guidance -> answer
 ```
 
 The probe uses `openai/gpt-oss-120b` through Groq. The LangGraph path is deterministic and does not call the model. Both paths use the same read-only order tool. The customer identity is bound in Python, outside model-controlled arguments. This is a demonstration boundary, not real authentication.
@@ -28,7 +28,7 @@ AgentOps/
   README.md
 ```
 
-`config.py` loads and validates settings. `tools.py` validates order data and controls access. `probe.py` performs the two-call Groq experiment. `graph.py` builds the local workflow. The notebook imports these modules and displays each step.
+`config.py` loads and validates settings. `tools.py` validates order data and controls access. `probe.py` performs the two-call Groq experiment. `graph.py` builds the local workflow and classifies requests using explicit Python rules. The notebook imports these modules and displays each step.
 
 ## Installation
 
@@ -57,6 +57,18 @@ The local checks need no API key. A successful live probe makes two Groq request
 
 ## Notebook and validation
 
+The local graph now accepts a customer question and routes it by an explicit rule:
+
+```text
+question -> classify_request
+              | order status + one ID  -> lookup_order -> answer or unavailable
+              | order status + no ID   -> ask_order_id
+              | order status + two IDs -> ask_one_order_id
+              + other request         -> unsupported
+```
+
+The classifier recognizes a small set of French and English status phrases. It does not use Groq, infer a missing order ID, or claim to understand arbitrary requests. The order lookup remains restricted to the bound demo customer. The notebook displays each category, path and answer.
+
 Open `notebooks/01_groq_tool_calling.ipynb` in VS Code, select `.venv\Scripts\python.exe` as the kernel, restart it, and run all cells in order. The default `RUN_LIVE_API = False` runs local checks and the LangGraph example without calling Groq. The notebook shows an accessible order, a missing order and an order belonging to another customer.
 
 To repeat the model experiment, set `RUN_LIVE_API = True` in the notebook and run the live section. Review its answer for language, correct status and invented facts. A non-empty answer is not proof of correctness.
@@ -75,13 +87,13 @@ This command consumes Groq quota. The probe returns selected result fields and o
 
 ## Validation status and limits
 
-The notebook's ten code cells completed in a Jupyter kernel with live calls disabled. Local checks covered both graph branches, four order statuses and invalid identifiers. Two observed Groq probes selected `get_order` and answered the configured question correctly in French. They took 0.839 and 0.899 seconds and used 646 tokens each. These are individual observations, not an accuracy or latency benchmark.
+The notebook's eleven code cells completed in sequence with live calls disabled, and its graph image was generated. Local checks covered the order-access boundary, status and unavailable branches, missing and multiple IDs, an unsupported request, and an English status question. Earlier checks covered four order statuses and invalid identifiers. Two previously observed Groq probes selected `get_order` and answered the configured question correctly in French. They took 0.839 and 0.899 seconds and used 646 tokens each. These are individual observations, not an accuracy or latency benchmark.
 
 The live probe covers one order-status question and still needs human review. The project has no real authentication, store-policy retrieval, persistent sessions, human approval or business actions.
 
 ## Planned progression
 
-1. Add controlled request classification and a small reviewed scenario set.
+1. Build a small reviewed scenario set for request routing and answer quality.
 2. Add store-policy retrieval and stronger error handling.
 3. Add human approval before any simulated action, then compare agent designs on shared cases.
 
