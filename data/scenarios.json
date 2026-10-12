@@ -1,0 +1,75 @@
+{
+  "schema_version": 1,
+  "scenarios": [
+    {
+      "id": "known_order_french",
+      "question": "Quel est le statut de ma commande ORD-1042 ?",
+      "category": "order_status",
+      "path": ["classify_request", "lookup_order", "answer"],
+      "answer": "Votre commande ORD-1042 est actuellement expédiée."
+    },
+    {
+      "id": "known_order_english",
+      "question": "What is the status of order ORD-1042?",
+      "category": "order_status",
+      "path": ["classify_request", "lookup_order", "answer"],
+      "answer": "Votre commande ORD-1042 est actuellement expédiée."
+    },
+    {
+      "id": "lowercase_order_id",
+      "question": "Status of order ord-1042?",
+      "category": "order_status",
+      "path": ["classify_request", "lookup_order", "answer"],
+      "answer": "Votre commande ORD-1042 est actuellement expédiée."
+    },
+    {
+      "id": "missing_order",
+      "question": "Quel est le statut de ma commande ORD-0 ?",
+      "category": "order_status",
+      "path": ["classify_request", "lookup_order", "unavailable"],
+      "answer": "Je ne peux pas accéder à cette commande."
+    },
+    {
+      "id": "another_customer_order",
+      "question": "Quel est le statut de ma commande ORD-2099 ?",
+      "category": "order_status",
+      "path": ["classify_request", "lookup_order", "unavailable"],
+      "answer": "Je ne peux pas accéder à cette commande."
+    },
+    {
+      "id": "no_order_id",
+      "question": "Quel est le statut de ma commande ?",
+      "category": "missing_order_id",
+      "path": ["classify_request", "ask_order_id"],
+      "answer": "Quel est votre numéro de commande (par exemple ORD-1042) ?"
+    },
+    {
+      "id": "two_order_ids",
+      "question": "Statut de ORD-1042 et ORD-2099 ?",
+      "category": "multiple_order_ids",
+      "path": ["classify_request", "ask_one_order_id"],
+      "answer": "Indiquez un seul numéro de commande à la fois."
+    },
+    {
+      "id": "refund_request",
+      "question": "Je veux un remboursement pour ORD-1042.",
+      "category": "unsupported",
+      "path": ["classify_request", "unsupported"],
+      "answer": "Je peux actuellement vérifier le statut d'une commande. Quelle est votre question sur son statut ?"
+    },
+    {
+      "id": "mixed_status_and_refund",
+      "question": "Quel est le statut de ORD-1042 et puis-je être remboursé ?",
+      "category": "unsupported",
+      "path": ["classify_request", "unsupported"],
+      "answer": "Je peux actuellement vérifier le statut d'une commande. Quelle est votre question sur son statut ?"
+    },
+    {
+      "id": "id_without_status_question",
+      "question": "Bonjour, ORD-1042.",
+      "category": "unsupported",
+      "path": ["classify_request", "unsupported"],
+      "answer": "Je peux actuellement vérifier le statut d'une commande. Quelle est votre question sur son statut ?"
+    }
+  ]
+}

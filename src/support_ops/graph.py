@@ -24,7 +24,7 @@ STATUS_PATTERN = re.compile(
     r"\b(statut|status|suivi|tracking)\b|où en est|where is", re.IGNORECASE
 )
 OTHER_INTENT_PATTERN = re.compile(
-    r"\b(remboursement|rembourser|refund|annuler|cancel|retour|return|modifier|change)\b",
+    r"\b(rembours\w*|refund\w*|annul\w*|cancel\w*|retour\w*|return\w*|modifi\w*|chang\w*)\b",
     re.IGNORECASE,
 )
 
