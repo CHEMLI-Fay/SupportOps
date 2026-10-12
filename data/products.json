@@ -1,0 +1,39 @@
+[
+  {
+    "sku": "SKU-AUDIO-A1",
+    "name": "Wireless Headphones A1",
+    "category": "Audio",
+    "price": 129.0,
+    "currency": "EUR",
+    "stock": 42,
+    "rating": 4.8,
+    "reviews": 214,
+    "image": "assets/products/headphones.png",
+    "description": "Over-ear wireless headphones with noise isolation and a 30-hour battery."
+  },
+  {
+    "sku": "SKU-KEYBOARD-K2",
+    "name": "Mechanical Keyboard K2",
+    "category": "Workspace",
+    "price": 89.0,
+    "currency": "EUR",
+    "stock": 16,
+    "rating": 4.7,
+    "reviews": 98,
+    "image": "assets/products/keyboard.png",
+    "description": "Compact mechanical keyboard with tactile switches and quiet keycaps."
+  },
+  {
+    "sku": "SKU-DRINK-M1",
+    "name": "Travel Tumbler M1",
+    "category": "Lifestyle",
+    "price": 24.5,
+    "currency": "EUR",
+    "stock": 28,
+    "rating": 4.6,
+    "reviews": 76,
+    "image": "assets/products/tumbler.png",
+    "description": "Double-wall stainless tumbler with a leak-resistant lid."
+  }
+]
+

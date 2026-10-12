@@ -1,0 +1,58 @@
+[
+  {
+    "customer_id": "CUST-001",
+    "name": "Camille Moreau",
+    "email": "camille.moreau@example.com",
+    "phone": "+33 6 00 00 00 01",
+    "tier": "Gold",
+    "joined_at": "2022-04-18",
+    "preferred_language": "French",
+    "address": "1 Demo Lane, 75000 Paris, France",
+    "notes": "Prefers email updates. Synthetic demo profile."
+  },
+  {
+    "customer_id": "CUST-002",
+    "name": "Alex Martin",
+    "email": "alex.martin@example.com",
+    "phone": "+33 6 00 00 00 02",
+    "tier": "Silver",
+    "joined_at": "2023-09-02",
+    "preferred_language": "French",
+    "address": "2 Sample Street, 69000 Lyon, France",
+    "notes": "Synthetic demo profile."
+  },
+  {
+    "customer_id": "CUST-003",
+    "name": "Noor Benali",
+    "email": "noor.benali@example.com",
+    "phone": "+33 6 00 00 00 03",
+    "tier": "Gold",
+    "joined_at": "2021-11-27",
+    "preferred_language": "French",
+    "address": "3 Example Avenue, 33000 Bordeaux, France",
+    "notes": "Synthetic demo profile."
+  },
+  {
+    "customer_id": "CUST-004",
+    "name": "Thomas Bernard",
+    "email": "thomas.bernard@example.com",
+    "phone": "+33 6 00 00 00 04",
+    "tier": "Standard",
+    "joined_at": "2025-01-13",
+    "preferred_language": "French",
+    "address": "4 Fictional Road, 59000 Lille, France",
+    "notes": "Synthetic demo profile."
+  },
+  {
+    "customer_id": "CUST-005",
+    "name": "Sophie Laurent",
+    "email": "sophie.laurent@example.com",
+    "phone": "+33 6 00 00 00 05",
+    "tier": "Silver",
+    "joined_at": "2024-06-09",
+    "preferred_language": "French",
+    "address": "5 Demo Boulevard, 44000 Nantes, France",
+    "notes": "Synthetic demo profile."
+  }
+]
+

@@ -97,6 +97,11 @@ class PolicySearchInput(BaseModel):
     query: str = Field(min_length=2, description="Customer's policy question or topic.")
 
 
+class DatabaseSearchInput(BaseModel):
+    model_config = ConfigDict(extra="forbid", strict=True)
+    query: str = Field(min_length=2, description="Search the current customer's account, orders, or public product catalog.")
+
+
 def make_checkpointer(root: Path) -> SqliteSaver:
     """Keep paused graph runs in a local SQLite file."""
     path = root.resolve() / "artifacts" / "checkpoints.sqlite3"
@@ -140,6 +145,9 @@ def build_support_agent(
     def search_policy(query: str) -> dict:
         return search_policies(policies, query)
 
+    def search_database(query: str) -> dict:
+        return store.search_database(customer_id, query)
+
     def request_cancel(order_id: str) -> dict:
         return store.preview_cancel(customer_id, order_id)
 
@@ -155,6 +163,12 @@ def build_support_agent(
             name="search_policy",
             description="Retrieve a written store policy with a source ID.",
             args_schema=PolicySearchInput,
+        ),
+        StructuredTool.from_function(
+            func=search_database,
+            name="search_database",
+            description="Search the current demo customer's profile and order history, or the public product catalog. Use this for broad account, history, customer, and product questions.",
+            args_schema=DatabaseSearchInput,
         ),
         StructuredTool.from_function(
             func=request_cancel,

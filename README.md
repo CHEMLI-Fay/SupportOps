@@ -1,50 +1,49 @@
-# SupportOps
+# Northstar Support
 
-SupportOps is a small agent engineering project for a fictional online store. A Groq LLM can answer order and policy questions by choosing tools in a LangGraph workflow. A cancellation pauses for human approval before a local SQLite order is changed. The project includes a visual notebook, a Streamlit chat, optional LangSmith traces, and DeepEval checks.
+Northstar Support is a local support-operations workspace built as an agent-engineering project. It combines a Streamlit interface, a Groq-powered LangGraph assistant, a fictional SQLite customer database, human approval for simulated cancellations, DeepEval quality checks, and optional LangSmith observability.
 
-All orders, customers, policies, and actions are synthetic. The customer selector is a demo context, not authentication. No real store, payment, or shipping service is connected.
+All customers, orders, addresses, payment records, and products are fictional. The customer selector is a demo context, not authentication. No real commerce, payment, or CRM system is connected.
 
-## How it works
+## What it demonstrates
+
+- Bounded LLM tool calling with LangGraph and Groq.
+- Customer-bound order and profile access.
+- Pydantic validation for tool arguments and fixture data.
+- Human-in-the-loop approval before a simulated cancellation.
+- Idempotent SQLite actions and resumable LangGraph checkpoints.
+- Streamlit operations views for orders, customers, products, policies, and database records.
+- DeepEval deterministic checks and optional LLM-as-a-judge scoring.
+- LangSmith traces, version fingerprints, datasets, and evaluation experiments.
+
+## Architecture
 
 ```text
-Customer question
-      |
-      v
-LangGraph agent (Groq LLM, up to 4 tool calls)
-      |
-      +--> get_order -------> customer-bound SQLite lookup
-      +--> search_policy ---> local policy with source ID
-      +--> request_cancel --> check ownership and status
-                                |
-                                v
-                         human approval pause
-                           |            |
-                          deny        approve
-                           |            |
-                         no change   one SQLite update
-      |
-      v
-Answer in the customer's language
+Streamlit or notebook
+        |
+        v
+LangGraph support agent + Groq
+        |
+        +--> get_order ---------> customer-bound order lookup
+        +--> search_database ---> profile/history or public catalog search
+        +--> search_policy -----> local policy lookup
+        +--> request_cancel ----> eligibility -> human approval -> SQLite update
+        |
+        v
+Grounded answer + optional LangSmith trace
 ```
 
-The model chooses a tool and writes answers to order and policy questions. Python owns the customer context, validates tool arguments, checks cancellation eligibility, and applies an approved update. Cancellation outcomes use fixed responses based on the saved status, so a repeated request says **already cancelled** rather than inventing a reason. Only `processing` orders can be cancelled. A request ID prevents the same approved action from running twice. The workflow saves pending approvals in a local SQLite LangGraph checkpointer, so the same conversation can resume after a rerun.
+The model can select an allowed tool, but Python controls the customer identity, validates arguments, enforces the tool budget, checks authorization, and applies cancellation rules. Cancellation results are rendered from verified database state rather than freely rewritten by the model.
 
-The earlier deterministic graph remains as a baseline for exact routing cases. It uses explicit Python rules and does not call Groq. See [ARCHITECTURE.md](ARCHITECTURE.md) for the design and boundaries.
+See [ARCHITECTURE.md](ARCHITECTURE.md) for the detailed workflow and safety boundaries.
 
-Each part has one job:
+## Requirements
 
-| Part | Where | What it does |
-| --- | --- | --- |
-| LangGraph + Groq | `src/support_ops/agent.py` | Decides which tool to use, pauses for approval, and answers |
-| Streamlit | `app.py` | Shows the chat, demo orders, and approval buttons |
-| DeepEval | `scripts/run_evals.py` | Runs repeatable checks and optional LLM judging |
-| LangSmith | `.env` tracing settings | Records live runs for inspection; it does not decide answers |
+- Windows PowerShell or an equivalent shell.
+- Python 3.12 or newer.
+- A Groq API key only for live model calls.
+- A LangSmith API key only for remote tracing and experiments.
 
-This separation lets the notebook and Streamlit use the same workflow while evaluations and traces observe it.
-
-## Quick start on Windows
-
-Use Python 3.12 or newer. In PowerShell, from the project root:
+## Install and run
 
 ```powershell
 py -3.12 -m venv .venv
@@ -52,84 +51,88 @@ py -3.12 -m venv .venv
 if (-not (Test-Path -LiteralPath .env)) { Copy-Item .env.example .env }
 ```
 
-Put your Groq key in the local `.env` file as `GROQ_API_KEY=...`. Do not commit `.env`. The offline notebook sections and exact checks work without an API key.
-
-Run the chat app:
-
-```powershell
-.\.venv\Scripts\python.exe -m streamlit run app.py
-```
-
-Try `Quel est le statut de ma commande ORD-1042 ?`, `Quelle est la politique de retour ?`, and `Annule ma commande ORD-1050.` The last request should show approval buttons. The sidebar displays the demo customer's orders and has a reset button to restore the synthetic data.
-
-## Learn in the notebooks
-
-Open `notebooks/02_full_workflow.ipynb` in VS Code. Select the interpreter **`.venv\Scripts\python.exe`**, restart the kernel, and run all cells. It displays the agent graph as an image, tool results, a denied and approved cancellation, and offline evaluation results. Its default `RUN_LIVE_AGENT = False` avoids API calls; set it to `True` to inspect real Groq tool choices. The live cancellation cell pauses; change `APPROVE_LIVE_CANCELLATION` only when you want to resume that synthetic action.
-
-`notebooks/01_groq_tool_calling.ipynb` explains the initial single-tool probe and deterministic routing graph. Its live section is also off by default.
-
-## Evaluation and tracing
-
-Run the offline checks:
-
-```powershell
-.\.venv\Scripts\python.exe -m pytest
-.\.venv\Scripts\python.exe scripts\run_evals.py
-```
-
-The offline DeepEval run scores the reviewed deterministic scenarios with exact matches. The tests also cover customer isolation, policy sources, approval and denial, persistent resume, idempotency, and a repeated cancellation after the order is already cancelled. These checks establish local behavior; they do not measure general LLM accuracy.
-
-Run the optional live agent checks, then add a Groq-backed DeepEval judge if desired:
-
-```powershell
-.\.venv\Scripts\python.exe scripts\run_evals.py --live
-.\.venv\Scripts\python.exe scripts\run_evals.py --live --judge
-```
-
-The live command checks that Groq calls the required tools for status and policy questions and pauses before cancellation. `--judge` scores answer grounding against short reference facts. Judge scores are separate from exact tool and safety checks, and live runs use API quota.
-
-To send LangGraph traces to LangSmith, add these fields to `.env`:
+Set local credentials in `.env`. Never commit this file:
 
 ```dotenv
+GROQ_API_KEY=your_groq_key
 LANGSMITH_TRACING=true
 LANGSMITH_API_KEY=your_langsmith_key
 LANGSMITH_PROJECT=SupportOps
 ```
 
-Then run the app or a live evaluation and open the **SupportOps** project in LangSmith. Tracing is optional; setting it to `false` keeps local execution available. An existing shell environment variable takes precedence over `.env`, so restart the terminal or notebook kernel after changing one.
+Start the application:
 
-## Files
+```powershell
+.\.venv\Scripts\python.exe -m streamlit run app.py
+```
+
+Try these questions in the Inbox:
+
+```text
+What is the status of ORD-1042?
+How many orders do I have and what is my membership tier?
+Which products are currently in stock?
+What is the return policy?
+Cancel my order ORD-1050.
+```
+
+Cancellation pauses for explicit approval. Use **Restore sample data** in **Demo controls** to reset the synthetic database and action receipts.
+
+## Testing
+
+```powershell
+.\.venv\Scripts\python.exe -m pytest -q
+.\.venv\Scripts\python.exe scripts/run_evals.py
+```
+
+The repository contains 54 live regression scenarios: nine reviewed behaviors plus five natural paraphrases for each behavior. The offline baseline remains the deterministic routing suite; the live suite exercises the real Groq agent.
+
+Run a live evaluation with the optional DeepEval judge:
+
+```powershell
+.\.venv\Scripts\python.exe scripts/run_evals.py --live --judge
+```
+
+Run the live suite and publish a LangSmith dataset/experiment:
+
+```powershell
+.\.venv\Scripts\python.exe scripts/run_evals.py --live --judge --langsmith --delay 20
+```
+
+Live calls consume provider quota. Reports are written under `artifacts/evaluations/` and include per-case checks, latency, reported tokens, judge scores, and aggregate summaries. The `artifacts/` directory is intentionally ignored by Git.
+
+## AgentOps walkthrough
+
+Open [notebooks/03_agentops.ipynb](notebooks/03_agentops.ipynb) with the project virtual environment. It explains LangGraph execution, LangSmith tracing, DeepEval scoring, latency, token usage, quota errors, reports, and experiment comparison. The earlier workflow is [notebooks/02_full_workflow.ipynb](notebooks/02_full_workflow.ipynb). Live calls are disabled by default in notebooks.
+
+## Reading LangSmith traces
+
+Open the `SupportOps` project in LangSmith and filter for `support_request`. A normal trace contains the model call, selected tool, tool result, and final answer. An approved cancellation also contains the interruption and resumed run. Metadata includes model, prompt, data, evaluation, implementation, session, and source fingerprints. API keys are never included.
+
+Evaluation experiments appear under LangSmith datasets and experiments. Each example records objective behavior feedback, `case_passed`, and `deepeval_grounding` when judging is enabled.
+
+## Repository map
 
 | Path | Purpose |
 | --- | --- |
-| `app.py` | Streamlit customer chat and approval controls |
-| `src/support_ops/agent.py` | Groq tool loop and LangGraph approval pause |
-| `src/support_ops/storage.py` | Customer-bound SQLite orders and idempotent actions |
-| `src/support_ops/policies.py` | Search over written synthetic policies |
-| `src/support_ops/graph.py` | Earlier deterministic routing baseline |
-| `scripts/run_evals.py` | Offline DeepEval and optional live agent checks |
-| `data/` | Fictional orders, policies, and reviewed scenarios |
-| `notebooks/` | Step-by-step visual walkthroughs |
-| `config/settings.toml` and `prompts/` | Model settings and instructions |
+| `app.py` | Streamlit application and user workflows |
+| `assets/` | CSS, brand mark, and product imagery |
+| `src/support_ops/agent.py` | Groq agent and approval workflow |
+| `src/support_ops/storage.py` | SQLite schema, access control, and actions |
+| `src/support_ops/tools.py` | Validated order models and tools |
+| `src/support_ops/records.py` | Validated customer and product records |
+| `src/support_ops/observability.py` | LangSmith configuration and version labels |
+| `src/support_ops/agent_evaluation.py` | Scenarios, DeepEval, reports, and LangSmith experiments |
+| `scripts/run_evals.py` | Evaluation CLI |
+| `data/` | Synthetic records, policies, and scenarios |
+| `prompts/agent.txt` | Agent instructions and safety rules |
+| `notebooks/` | Workflow and AgentOps walkthroughs |
+| `tests/` | Regression tests |
 
-`artifacts/` holds local SQLite data and is ignored by Git. Use **Reset demo orders** in Streamlit to restore the initial processing order.
+## Limitations
 
-## Validation observed on 12 October 2026
+This is a local learning and demonstration application, not a production CRM. The customer selector does not authenticate a real user. Data is synthetic, search is intentionally limited, and cancellation effects are simulated in SQLite. Live evaluation results depend on provider availability, quota, model behavior, and network access.
 
-- Seven Python tests passed; all ten reviewed DeepEval scenarios passed.
-- Both notebooks executed from start to finish with live mode off and each saved a graph image, with no cell errors.
-- The Streamlit app rendered its title, chat input, and controls without an exception.
-- In a live Groq run, the status question called `get_order`, the return question called `search_policy`, and cancellation paused before approval. After approval, the synthetic order changed to `cancelled`. A repeated request returned `already cancelled` without another approval pause.
-- The optional Groq-backed judge scored the two checked answers 1.0 each in that run. This is one observation, not a benchmark.
-- LangSmith reported a `SupportOps` project with recent runs after tracing was enabled.
+## License
 
-## Limits
-
-This is a learning demo, not a deployed customer-support system. The sidebar customer selector provides no identity verification. Policy retrieval is keyword based, so unsupported questions may return no source. Live answer quality depends on the selected model and must be reviewed; the exact tests primarily protect tool use and state transitions.
-
-## References
-
-- [LangGraph interrupts and human approval](https://docs.langchain.com/oss/python/langgraph/interrupts)
-- [LangChain Groq integration](https://docs.langchain.com/oss/python/integrations/chat/groq)
-- [LangSmith tracing with LangGraph](https://docs.langchain.com/langsmith/trace-with-langgraph)
-- [DeepEval evaluation guide](https://deepeval.com/docs/evaluation-introduction)
+This repository is currently an educational project without a published license.

@@ -27,6 +27,27 @@ def test_order_access_and_policy_sources(tmp_path):
     assert search_policies(policies, "unrelated question")["found"] is False
 
 
+def test_rich_database_and_customer_bound_search(tmp_path):
+    store = seeded_store(tmp_path)
+    order = store.get_order("CUST-001", "ORD-1042")
+    assert order["tracking_number"] == "NS-8042-6621"
+    assert order["created_at"] == "2026-10-02"
+    assert order["items"][0]["sku"] == "SKU-AUDIO-A1"
+    assert len(store.list_customers()) == 5
+    assert len(store.list_products()) == 3
+    assert len(store.list_orders()) == 9
+
+    profile_search = store.search_database("CUST-001", "What is my account tier?")
+    assert profile_search["customer"]["name"] == "Camille Moreau"
+    assert profile_search["customer"]["tier"] == "Gold"
+    assert all(order["customer_id"] == "CUST-001" for order in profile_search["orders"])
+
+    foreign_order = store.search_database("CUST-001", "Tell me about ORD-2099")
+    assert foreign_order["orders"] == []
+    product_search = store.search_database("CUST-001", "What is the keyboard stock?")
+    assert product_search["products"][0]["sku"] == "SKU-KEYBOARD-K2"
+
+
 def test_approved_cancellation_is_idempotent(tmp_path):
     store = seeded_store(tmp_path)
     assert store.preview_cancel("CUST-001", "ORD-1050")["eligible"] is True

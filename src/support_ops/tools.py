@@ -8,14 +8,30 @@ from langchain_core.tools import StructuredTool
 from pydantic import BaseModel, ConfigDict, Field, TypeAdapter, ValidationError
 
 
+class OrderLine(BaseModel):
+    model_config = ConfigDict(extra="forbid", strict=True)
+    sku: str = Field(pattern=r"^SKU-[A-Z0-9-]+$")
+    product_name: str = Field(min_length=1)
+    quantity: int = Field(gt=0)
+    unit_price: float = Field(ge=0)
+
+
 class Order(BaseModel):
     model_config = ConfigDict(extra="forbid", strict=True)
     order_id: str = Field(pattern=r"^ORD-[0-9]+$")
     customer_id: str = Field(pattern=r"^CUST-[0-9]+$")
-    product: str = Field(min_length=1)
-    quantity: int = Field(gt=0)
     status: Literal["processing", "shipped", "delivered", "cancelled"]
     estimated_delivery: str | None
+    created_at: str
+    updated_at: str
+    tracking_number: str | None
+    payment_method: str
+    subtotal: float = Field(ge=0)
+    shipping_fee: float = Field(ge=0)
+    total: float = Field(ge=0)
+    currency: str = Field(pattern=r"^[A-Z]{3}$")
+    shipping_address: str = Field(min_length=1)
+    items: list[OrderLine] = Field(min_length=1)
 
 
 class OrderLookup(BaseModel):
@@ -45,7 +61,11 @@ def make_order_tool(orders: dict[str, Order], customer_id: str) -> StructuredToo
         order = orders.get(order_id)
         if order is None or order.customer_id != customer_id:
             return {"found": False, "error": "order_unavailable"}
-        return {"found": True, **order.model_dump(exclude={"customer_id"})}
+        record = order.model_dump(exclude={"customer_id", "items"})
+        record["product"] = order.items[0].product_name
+        record["quantity"] = sum(item.quantity for item in order.items)
+        record["items"] = [item.model_dump() for item in order.items]
+        return {"found": True, **record}
 
     return StructuredTool.from_function(
         func=get_order,

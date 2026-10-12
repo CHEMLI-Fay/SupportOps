@@ -1,6 +1,6 @@
-# SupportOps: target workflow
+# SupportOps: workflow architecture
 
-This document records the implementation plan before the full workflow is coded. The project uses fictional customers, orders, policies, and simulated actions.
+The project uses fictional customers, orders, policies, and simulated actions.
 
 ## User journey
 
@@ -9,6 +9,7 @@ Streamlit or notebook
   -> customer context (demo only)
   -> LangGraph agent -> Groq LLM chooses one allowed tool
        -> get_order     -> customer-bound order lookup
+       -> search_database -> customer-bound profile/history or public catalog search
        -> search_policy -> local store policy lookup
        -> request_cancel -> preview -> human approval -> idempotent local update
   -> grounded answer
@@ -19,7 +20,7 @@ The model may choose tools and write answers for read-only questions. Python pro
 
 ## Data and state
 
-- `data/orders.json` and `data/policies.json` are synthetic seed data.
+- `data/orders.json`, `data/customers.json`, `data/products.json`, and `data/policies.json` are synthetic seed data.
 - A local SQLite database under `artifacts/` stores order status and action receipts. The directory stays out of Git.
 - A SQLite LangGraph checkpointer stores paused runs so approval can be resumed by thread ID.
 - The customer ID comes from application context, never from model-controlled tool arguments. The Streamlit customer selector is only a demo and is not authentication.
@@ -29,6 +30,10 @@ The model may choose tools and write answers for read-only questions. Python pro
 
 - LangSmith tracing is opt-in through `LANGSMITH_TRACING`, `LANGSMITH_API_KEY`, and `LANGSMITH_PROJECT`. Local use works without a LangSmith account.
 - The existing deterministic scenario suite stays as a regression baseline.
+- `observability.py` labels app runs with conversation, model, prompt, configuration/data and implementation versions.
+- `agent_evaluation.py` runs 54 versioned agent cases against isolated databases, persists a report after each case, and can publish the dataset and experiment with the LangSmith SDK.
+- Experiment feedback separates objective behavior checks from the DeepEval judge score. API failures remain errors; no missing score is treated as success.
+- `notebooks/03_agentops.ipynb` explains traces, metrics, quota errors, measured timing/usage and experiment comparison outside the customer interface.
 - DeepEval scores the reviewed deterministic scenarios. Python tests cover tool and action invariants; an optional Groq-backed judge checks answer quality. LLM judge scores are reported separately from exact safety checks.
 - The final validation includes local workflow paths, approval/resume, idempotency, notebook execution, Streamlit startup, and live Groq calls when a key and quota are available.
 
