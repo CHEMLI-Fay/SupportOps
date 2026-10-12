@@ -1,0 +1,20 @@
+[
+  {
+    "id": "POL-SHIPPING",
+    "title": "Shipping and tracking",
+    "keywords": ["shipping", "delivery", "tracking", "livraison", "expédition", "suivi"],
+    "content": "Orders marked shipped are with the carrier. An estimated delivery date is shown only when it is present in the order record. SupportOps cannot guarantee a delivery date or change a carrier shipment."
+  },
+  {
+    "id": "POL-CANCELLATION",
+    "title": "Order cancellation",
+    "keywords": ["cancel", "cancellation", "annuler", "annulation"],
+    "content": "A customer may request cancellation only while their order is processing. The request requires human approval in this demo. Shipped, delivered, and already cancelled orders cannot be cancelled by this workflow. This demonstration does not issue refunds."
+  },
+  {
+    "id": "POL-RETURNS",
+    "title": "Returns",
+    "keywords": ["return", "returns", "refund", "retour", "remboursement"],
+    "content": "For this fictional store, an unused item may be returned within 14 days after delivery. The customer must contact a human support agent to start a return. SupportOps cannot create a return or promise a refund."
+  }
+]
