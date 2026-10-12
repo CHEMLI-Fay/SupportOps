@@ -34,7 +34,7 @@ Grounded answer + optional LangSmith trace
 
 The model can select an allowed tool, but Python controls the customer identity, validates arguments, enforces the tool budget, checks authorization, and applies cancellation rules. Cancellation results are rendered from verified database state rather than freely rewritten by the model.
 
-See [ARCHITECTURE.md](ARCHITECTURE.md) for the detailed workflow and safety boundaries.
+The workflow above summarizes the access and approval boundaries implemented in `src/support_ops/agent.py` and `src/support_ops/storage.py`.
 
 ## Requirements
 
@@ -51,7 +51,7 @@ py -3.12 -m venv .venv
 if (-not (Test-Path -LiteralPath .env)) { Copy-Item .env.example .env }
 ```
 
-Set local credentials in `.env`. Never commit this file:
+Set local credentials in `.env`. Never commit this file or generated data under `artifacts/`; check `git status --short` before committing:
 
 ```dotenv
 GROQ_API_KEY=your_groq_key
