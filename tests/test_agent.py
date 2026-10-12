@@ -78,12 +78,14 @@ def test_approval_denial_and_persistent_resume(tmp_path):
     )
     denied = resumed_graph.invoke(Command(resume=False), config=config)
     assert denied["last_tool_result"]["outcome"] == "denied"
+    assert "declined cancellation" in denied["messages"][-1].content
     assert store.get_order("CUST-001", "ORD-1050")["status"] == "processing"
 
     pending, config = start(graph, "Cancel ORD-1050")
     assert "__interrupt__" in pending
     approved = resumed_graph.invoke(Command(resume=True), config=config)
     assert approved["last_tool_result"]["outcome"] == "cancelled"
+    assert "after your approval" in approved["messages"][-1].content
     assert store.get_order("CUST-001", "ORD-1050")["status"] == "cancelled"
     replay = store.cancel_order("CUST-001", "ORD-1050", "CUST-001:scripted-call")
     assert replay["replayed"] is True
@@ -94,4 +96,19 @@ def test_ineligible_order_does_not_pause(tmp_path):
     result, _ = start(graph, "Cancel ORD-1042")
     assert "__interrupt__" not in result
     assert result["last_tool_result"]["eligible"] is False
+    assert "already shipped" in result["messages"][-1].content
     assert store.get_order("CUST-001", "ORD-1042")["status"] == "shipped"
+
+
+def test_repeated_cancellation_reports_actual_status(tmp_path):
+    graph, store = build(tmp_path, "request_cancel", {"order_id": "ORD-1050"})
+    store.cancel_order("CUST-001", "ORD-1050", "earlier-approval")
+    result, _ = start(graph, "Annule ma commande ORD-1050")
+    assert "__interrupt__" not in result
+    assert result["last_tool_result"]["status"] == "cancelled"
+    assert "déjà annulée" in result["messages"][-1].content
+    assert "traitement" not in result["messages"][-1].content
+    assert store.get_order("CUST-001", "ORD-1050")["status"] == "cancelled"
+
+    english, _ = start(graph, "Cancel order ORD-1050")
+    assert "already cancelled" in english["messages"][-1].content

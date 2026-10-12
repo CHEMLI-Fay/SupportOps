@@ -182,6 +182,24 @@ def run_live(root: Path, judge_enabled: bool) -> dict:
                 "status_after": "cancelled",
             }
         )
+        repeated = graph.invoke(
+            {
+                "messages": [HumanMessage(content="Annule ma commande ORD-1050.")],
+                "tool_calls_used": 0,
+            },
+            config={"configurable": {"thread_id": str(uuid4())}},
+        )
+        repeated_answer = final_answer(repeated)
+        if "__interrupt__" in repeated or "déjà annulée" not in repeated_answer:
+            raise AssertionError("Repeated cancellation did not report the saved status.")
+        results.append(
+            {
+                "id": "repeated_cancellation",
+                "approval_pause": False,
+                "answer": repeated_answer,
+                "status_after": store.get_order(settings.demo.customer_id, "ORD-1050")["status"],
+            }
+        )
         return {"model": settings.llm.model, "cases": results}
 
 

@@ -7,7 +7,7 @@ from pathlib import Path
 from typing import Annotated, NotRequired, TypedDict
 
 from dotenv import load_dotenv
-from langchain_core.messages import AIMessage, AnyMessage, SystemMessage, ToolMessage
+from langchain_core.messages import AIMessage, AnyMessage, HumanMessage, SystemMessage, ToolMessage
 from langchain_core.tools import StructuredTool
 from langchain_groq import ChatGroq
 from langgraph.checkpoint.sqlite import SqliteSaver
@@ -23,6 +23,67 @@ from support_ops.tools import OrderLookup
 
 
 MAX_TOOL_CALLS = 4
+
+
+def cancellation_answer(result: dict, order_id: str | None, question: str) -> str:
+    """Render an action outcome from validated data, without another LLM call."""
+    lower = question.casefold()
+    english = bool(re.search(r"\b(cancel|cancellation|order)\b", lower)) and not (
+        "annul" in lower or "commande" in lower
+    )
+    label = (
+        order_id
+        if isinstance(order_id, str) and re.fullmatch(r"ORD-[0-9]+", order_id)
+        else ("this order" if english else "cette commande")
+    )
+    if result.get("error") == "invalid_tool_arguments":
+        return (
+            "Please provide a valid order ID before requesting cancellation."
+            if english
+            else "Veuillez indiquer un numéro de commande valide pour demander l'annulation."
+        )
+    if result.get("found") is False:
+        return (
+            f"Order {label} is unavailable. No cancellation was made."
+            if english
+            else f"La commande {label} est introuvable ou inaccessible. Aucune annulation n'a été effectuée."
+        )
+    if result.get("outcome") == "cancelled":
+        return (
+            f"Order {label} was cancelled after your approval."
+            if english
+            else f"La commande {label} a été annulée après votre approbation."
+        )
+    if result.get("outcome") == "denied":
+        return (
+            f"You declined cancellation of order {label}. No change was made."
+            if english
+            else f"Vous avez refusé l'annulation de la commande {label}. Aucun changement n'a été effectué."
+        )
+    status = result.get("status")
+    if status == "cancelled":
+        return (
+            f"Order {label} is already cancelled. No change was made."
+            if english
+            else f"La commande {label} est déjà annulée. Aucun changement n'a été effectué."
+        )
+    if status == "shipped":
+        return (
+            f"Order {label} has already shipped and cannot be cancelled here. No change was made."
+            if english
+            else f"La commande {label} est déjà expédiée et ne peut pas être annulée ici. Aucun changement n'a été effectué."
+        )
+    if status == "delivered":
+        return (
+            f"Order {label} has already been delivered and cannot be cancelled here. No change was made."
+            if english
+            else f"La commande {label} est déjà livrée et ne peut pas être annulée ici. Aucun changement n'a été effectué."
+        )
+    return (
+        "I could not confirm this cancellation. No change was made."
+        if english
+        else "Je n'ai pas pu confirmer cette annulation. Aucun changement n'a été effectué."
+    )
 
 
 class AgentState(TypedDict):
@@ -120,6 +181,14 @@ def build_support_agent(
             return {
                 "messages": [AIMessage(content="Je ne peux pas terminer cette demande de façon fiable. Veuillez contacter le support.")],
             }
+        if len(response.tool_calls) > 1 and any(
+            call["name"] == "request_cancel" for call in response.tool_calls
+        ):
+            return {
+                "messages": [
+                    AIMessage(content="Veuillez demander l'annulation d'une seule commande à la fois.")
+                ]
+            }
         return {"messages": [response]}
 
     def route_after_model(state: AgentState) -> str:
@@ -130,6 +199,8 @@ def build_support_agent(
         response = state["messages"][-1]
         outputs = []
         last_result = None
+        cancel_result = None
+        cancel_order_id = None
         for call in response.tool_calls:
             name = call["name"]
             call_id = call.get("id")
@@ -165,17 +236,41 @@ def build_support_agent(
                     name=name,
                 )
             )
+            if name == "request_cancel":
+                cancel_result = result
+                cancel_order_id = result.get("order_id") or call["args"].get("order_id")
             last_result = result
+        if cancel_result is not None:
+            question = next(
+                (
+                    str(message.content)
+                    for message in reversed(state["messages"])
+                    if isinstance(message, HumanMessage)
+                ),
+                "",
+            )
+            outputs.append(
+                AIMessage(
+                    content=cancellation_answer(
+                        cancel_result, cancel_order_id, question
+                    )
+                )
+            )
         return {
             "messages": outputs,
             "tool_calls_used": state.get("tool_calls_used", 0) + len(response.tool_calls),
             "last_tool_result": last_result,
         }
 
+    def route_after_tools(state: AgentState) -> str:
+        return END if isinstance(state["messages"][-1], AIMessage) else "agent"
+
     builder = StateGraph(AgentState)
     builder.add_node("agent", call_model)
     builder.add_node("execute_tools", execute_tools)
     builder.add_edge(START, "agent")
     builder.add_conditional_edges("agent", route_after_model, {"execute_tools": "execute_tools", END: END})
-    builder.add_edge("execute_tools", "agent")
+    builder.add_conditional_edges(
+        "execute_tools", route_after_tools, {"agent": "agent", END: END}
+    )
     return builder.compile(checkpointer=checkpointer)

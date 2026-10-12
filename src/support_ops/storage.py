@@ -97,7 +97,9 @@ class SupportStore:
             "order_id": order_id,
             "status": order["status"],
             "eligible": order["status"] == "processing",
-            "reason": "processing_only" if order["status"] != "processing" else None,
+            "reason": (
+                f"status_{order['status']}" if order["status"] != "processing" else None
+            ),
         }
 
     def cancel_order(self, customer_id: str, order_id: str, request_id: str) -> dict:
@@ -128,7 +130,8 @@ class SupportStore:
                     "found": True,
                     "order_id": order_id,
                     "outcome": "not_eligible",
-                    "reason": "processing_only",
+                    "status": row["status"],
+                    "reason": f"status_{row['status']}",
                 }
             connection.execute(
                 "UPDATE orders SET status = 'cancelled' "

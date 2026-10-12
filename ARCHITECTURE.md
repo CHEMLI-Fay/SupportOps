@@ -15,7 +15,7 @@ Streamlit or notebook
   -> optional LangSmith trace
 ```
 
-The model may choose tools and write the final answer. Python validates tool names, arguments, ownership, approval, and action eligibility. A per-turn tool limit prevents unbounded loops. A missing or failed tool result must never be presented as a completed action. No real commerce API or payment service is used.
+The model may choose tools and write answers for read-only questions. Python produces the final cancellation outcome from verified tool data, and also validates tool names, arguments, ownership, approval, and action eligibility. A per-turn tool limit prevents unbounded loops. A missing or failed tool result must never be presented as a completed action. No real commerce API or payment service is used.
 
 ## Data and state
 
@@ -44,3 +44,12 @@ The model may choose tools and write the final answer. Python validates tool nam
 ## Completion criteria
 
 The project is ready for user review when a fresh environment can install the documented dependencies; the notebook visibly explains and runs the full graph; the Streamlit app can ask about order status and policy; an approved cancellation updates only an eligible demo order once; denial changes nothing; automated checks pass; and live LLM behavior has been observed and recorded. Any provider or account limitation must be reported explicitly.
+
+## Correction plan: repeated cancellation
+
+On 12 October 2026, a repeated request for an already cancelled demo order produced a contradictory answer: the tool returned an ineligible order, but the LLM said it was still processing. The fix is:
+
+1. Return the actual order status for every ineligible cancellation, including a race after approval.
+2. Finish cancellation requests with a short response generated from the validated tool result. The LLM still chooses the tool, but cannot rewrite the action outcome.
+3. Add regression cases for an already cancelled order, a shipped order, and approval denial. Show the repeated request in the notebook.
+4. Run the local tests, notebook, Streamlit path, and a live Groq reproduction before publishing.

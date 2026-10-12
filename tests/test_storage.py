@@ -35,6 +35,10 @@ def test_approved_cancellation_is_idempotent(tmp_path):
     assert first["outcome"] == again["outcome"] == "cancelled"
     assert first["replayed"] is False and again["replayed"] is True
     assert store.get_order("CUST-001", "ORD-1050")["status"] == "cancelled"
+    assert store.preview_cancel("CUST-001", "ORD-1050")["reason"] == "status_cancelled"
+    later = store.cancel_order("CUST-001", "ORD-1050", "request-later")
+    assert later["outcome"] == "not_eligible"
+    assert later["status"] == "cancelled"
     assert store.cancel_order("CUST-001", "ORD-1042", "request-2")["outcome"] == "not_eligible"
     assert store.cancel_order("CUST-001", "ORD-2099", "request-3") == {
         "found": False,

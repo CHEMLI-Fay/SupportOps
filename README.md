@@ -27,7 +27,7 @@ LangGraph agent (Groq LLM, up to 4 tool calls)
 Answer in the customer's language
 ```
 
-The model chooses a tool and writes an answer. Python owns the customer context, validates tool arguments, checks cancellation eligibility, and applies an approved update. Only `processing` orders can be cancelled. A request ID prevents the same approved action from running twice. The workflow saves pending approvals in a local SQLite LangGraph checkpointer, so the same conversation can resume after a rerun.
+The model chooses a tool and writes answers to order and policy questions. Python owns the customer context, validates tool arguments, checks cancellation eligibility, and applies an approved update. Cancellation outcomes use fixed responses based on the saved status, so a repeated request says **already cancelled** rather than inventing a reason. Only `processing` orders can be cancelled. A request ID prevents the same approved action from running twice. The workflow saves pending approvals in a local SQLite LangGraph checkpointer, so the same conversation can resume after a rerun.
 
 The earlier deterministic graph remains as a baseline for exact routing cases. It uses explicit Python rules and does not call Groq. See [ARCHITECTURE.md](ARCHITECTURE.md) for the design and boundaries.
 
@@ -77,7 +77,7 @@ Run the offline checks:
 .\.venv\Scripts\python.exe scripts\run_evals.py
 ```
 
-The offline DeepEval run scores the reviewed deterministic scenarios with exact matches. The tests also cover customer isolation, policy sources, approval and denial, persistent resume, and idempotency. These checks establish local behavior; they do not measure general LLM accuracy.
+The offline DeepEval run scores the reviewed deterministic scenarios with exact matches. The tests also cover customer isolation, policy sources, approval and denial, persistent resume, idempotency, and a repeated cancellation after the order is already cancelled. These checks establish local behavior; they do not measure general LLM accuracy.
 
 Run the optional live agent checks, then add a Groq-backed DeepEval judge if desired:
 
@@ -116,10 +116,10 @@ Then run the app or a live evaluation and open the **SupportOps** project in Lan
 
 ## Validation observed on 12 October 2026
 
-- Six Python tests passed; all ten reviewed DeepEval scenarios passed.
+- Seven Python tests passed; all ten reviewed DeepEval scenarios passed.
 - Both notebooks executed from start to finish with live mode off and each saved a graph image, with no cell errors.
 - The Streamlit app rendered its title, chat input, and controls without an exception.
-- In a live Groq run, the status question called `get_order`, the return question called `search_policy`, and cancellation paused before approval. After approval, the synthetic order changed to `cancelled`.
+- In a live Groq run, the status question called `get_order`, the return question called `search_policy`, and cancellation paused before approval. After approval, the synthetic order changed to `cancelled`. A repeated request returned `already cancelled` without another approval pause.
 - The optional Groq-backed judge scored the two checked answers 1.0 each in that run. This is one observation, not a benchmark.
 - LangSmith reported a `SupportOps` project with recent runs after tracing was enabled.
 
