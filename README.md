@@ -99,11 +99,13 @@ Run the live suite and publish a LangSmith dataset/experiment:
 .\.venv\Scripts\python.exe scripts/run_evals.py --live --judge --langsmith --delay 20
 ```
 
-Live calls consume provider quota. Reports are written under `artifacts/evaluations/` and include per-case checks, latency, reported tokens, judge scores, and aggregate summaries. The `artifacts/` directory is intentionally ignored by Git.
+Live calls consume provider quota. Reports are written under `artifacts/evaluations/` and include per-case checks, latency, reported tokens, judge scores, and aggregate summaries. The `artifacts/` directory is intentionally ignored by Git. The LangSmith dataset name changes when any live question or expected behavior changes.
 
 ## AgentOps walkthrough
 
 Open [notebooks/03_agentops.ipynb](notebooks/03_agentops.ipynb) with the project virtual environment. It explains LangGraph execution, LangSmith tracing, DeepEval scoring, latency, token usage, quota errors, reports, and experiment comparison. The earlier workflow is [notebooks/02_full_workflow.ipynb](notebooks/02_full_workflow.ipynb). Live calls are disabled by default in notebooks.
+
+Notebook outputs are cleared in Git. Run cells locally to generate your own plots and reports without publishing session traces.
 
 ## Reading LangSmith traces
 

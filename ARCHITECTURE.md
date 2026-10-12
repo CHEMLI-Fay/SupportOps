@@ -35,26 +35,12 @@ The model may choose tools and write answers for read-only questions. Python pro
 - Experiment feedback separates objective behavior checks from the DeepEval judge score. API failures remain errors; no missing score is treated as success.
 - `notebooks/03_agentops.ipynb` explains traces, metrics, quota errors, measured timing/usage and experiment comparison outside the customer interface.
 - DeepEval scores the reviewed deterministic scenarios. Python tests cover tool and action invariants; an optional Groq-backed judge checks answer quality. LLM judge scores are reported separately from exact safety checks.
-- The final validation includes local workflow paths, approval/resume, idempotency, notebook execution, Streamlit startup, and live Groq calls when a key and quota are available.
+- The notebooks contain executable source cells. Their outputs are cleared before publication so local traces and session data stay in `artifacts/`.
 
-## Delivery order
+## Cancellation outcome
 
-1. Add policy and processing-order fixtures, package dependencies, and configuration.
-2. Add SQLite order/action storage and policy lookup.
-3. Build the bounded LangGraph agent with Groq tool calling and approval interruption.
-4. Add a clear notebook walkthrough and a small Streamlit chat interface.
-5. Add DeepEval cases and optional LangSmith tracing.
-6. Run the local and live checks, review outputs, document the observed results, and only then publish the final increment.
+The order tool reports the actual status when cancellation is unavailable, including an already cancelled order. After an eligible request is approved or declined, Python builds the final answer from the verified outcome. The action receipt makes a repeated approval idempotent.
 
-## Completion criteria
+## Evaluation interpretation
 
-The project is ready for user review when a fresh environment can install the documented dependencies; the notebook visibly explains and runs the full graph; the Streamlit app can ask about order status and policy; an approved cancellation updates only an eligible demo order once; denial changes nothing; automated checks pass; and live LLM behavior has been observed and recorded. Any provider or account limitation must be reported explicitly.
-
-## Correction plan: repeated cancellation
-
-On 12 October 2026, a repeated request for an already cancelled demo order produced a contradictory answer: the tool returned an ineligible order, but the LLM said it was still processing. The fix is:
-
-1. Return the actual order status for every ineligible cancellation, including a race after approval.
-2. Finish cancellation requests with a short response generated from the validated tool result. The LLM still chooses the tool, but cannot rewrite the action outcome.
-3. Add regression cases for an already cancelled order, a shipped order, and approval denial. Show the repeated request in the notebook.
-4. Run the local tests, notebook, Streamlit path, and a live Groq reproduction before publishing.
+The 54 live cases cover nine behavior categories and five additional phrasings of each. Paraphrases are regression coverage for the same fixtures; they are not independent customer samples. A local scripted-model test verifies tool contracts, while a live run requires Groq. DeepEval's judge scores answer quality separately from the deterministic access, approval, and state checks.

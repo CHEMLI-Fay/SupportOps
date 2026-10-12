@@ -276,9 +276,14 @@ def experiment_scores(outputs):
     return {"results": results}
 
 
-def _dataset(client, root, cases):
-    version = hashlib.sha256((root / "data/agent_scenarios.json").read_bytes()).hexdigest()[:12]
-    name = f"SupportOps-agent-{version}"
+def scenario_version(cases):
+    """Fingerprint every evaluated question and its reviewed contract."""
+    payload = [case.model_dump(mode="json") for case in cases]
+    return hashlib.sha256(json.dumps(payload, sort_keys=True).encode("utf-8")).hexdigest()[:12]
+
+
+def _dataset(client, cases):
+    name = f"SupportOps-agent-{scenario_version(cases)}"
     try:
         dataset = client.read_dataset(dataset_name=name)
     except LangSmithNotFoundError:
@@ -399,7 +404,7 @@ def run_suite(root, *, live=False, judge_enabled=False, publish=False,
                 if not tracing_status(root)["key_configured"]:
                     raise ValueError("LANGSMITH_API_KEY is required for experiments.")
                 client = Client()
-                examples = [e for e in _dataset(client, root, all_cases)
+                examples = [e for e in _dataset(client, all_cases)
                             if e.inputs["case_id"] in by_id]
                 results = evaluate(
                     target, data=examples, evaluators=[experiment_scores],

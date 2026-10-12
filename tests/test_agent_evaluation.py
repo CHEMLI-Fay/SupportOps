@@ -6,11 +6,18 @@ from langchain_core.messages import AIMessage, ToolMessage
 
 from support_ops.agent_evaluation import (
     check_behavior, execute_case, load_agent_scenarios, report_passed, run_suite,
+    scenario_version,
 )
 
 
 ROOT = Path(__file__).resolve().parents[1]
 CASES = load_agent_scenarios(ROOT)
+
+
+def test_dataset_version_changes_when_a_paraphrase_changes():
+    edited = list(CASES)
+    edited[-1] = edited[-1].model_copy(update={"question": "A revised access request."})
+    assert scenario_version(edited) != scenario_version(CASES)
 
 
 @pytest.fixture(autouse=True)
